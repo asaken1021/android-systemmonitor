@@ -1,40 +1,56 @@
 package net.asaken1021.systemmonitor;
 
-import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.Notification;
 import android.app.Service;
 import android.content.Intent;
-import android.os.CpuUsageInfo;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.util.Log;
 
+import java.io.InputStream;
 import java.util.Timer;
 import java.util.TimerTask;
 
 public class SystemMonitorService extends Service {
 
-
     Handler mHandler;
     Timer mTimer;
     int count = 0;
     boolean isServiceStarted = false;
-    CpuUsageInfo cpu;
-    ActivityManager am = ((ActivityManager) getSystemService(Activity.ACTIVITY_SERVICE));
-    ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
-    int availMem = 0;
+    Intent activity;
+
+    ActivityManager am;
+    ActivityManager.MemoryInfo mi;
+    long availMem = 0;
     Notification notify;
     NotificationCompat.Builder builder;
     NotificationManagerCompat manager;
+
+    String[] cmdArgs = {"/system/bin/cat", "/proc/stat"};
+    String cpuLine = "";
+    StringBuffer cpuBuffer = new StringBuffer();
+    ProcessBuilder cmd = new ProcessBuilder(cmdArgs);
+    int totalCpuTime = 0;
+    int tickCpuTime = 0;
+    int cpuLineBuffer = 0;
+    boolean isFirstTick = true;
+    long CpuUsage = 0;
+    int debug_cpu_time = 0; //For debug
 
     @Override
     public void onCreate() {
         super.onCreate();
         Log.i("SystemMonitorService", "onCreate");
         mHandler = new Handler();
+
+        activity = new Intent(getApplicationContext(), MainActivity.class);
+
+        am = ((ActivityManager) getSystemService(MainActivity.context.ACTIVITY_SERVICE));
+        mi = new ActivityManager.MemoryInfo();
+
 
         builder = new NotificationCompat.Builder(getApplicationContext());
         manager = NotificationManagerCompat.from(getApplicationContext());
@@ -80,11 +96,14 @@ public class SystemMonitorService extends Service {
                 mHandler.post(new Runnable() {
                     @Override
                     public void run() {
+                        Log.d("DEBUG_LINE", "-------------------------------------------------------------------------");
                         count++;
 //                        builder.setSubText("Count: " + count);
                         am.getMemoryInfo(mi);
-                        availMem = (int) mi.availMem / 1024;
-                        builder.setContentText("CPU: " + cpu.getActive() + "ms" + " RAM: " + availMem + "MB");
+                        availMem = mi.availMem / 1024000;
+                        checkCpuUsage();
+                        Log.d("MEM_VALUE", "" + availMem);
+                        builder.setContentText("CPU: " + CpuUsage + "%" + " RAM: " + availMem + "MB");
                         notify = builder.build();
                         notify.flags = Notification.FLAG_NO_CLEAR;
                         manager.notify(1, notify);
@@ -92,5 +111,76 @@ public class SystemMonitorService extends Service {
                 });
             }
         }, 0, 1000);
+    }
+
+    private void checkCpuUsage() {
+        try {
+            Process process = cmd.start();
+
+            InputStream in = process.getInputStream();
+
+            // 統計情報より1024バイト分を読み込む
+            // cpu user/nice/system/idle/iowait/irq/softirq/steal/の情報を取得する
+
+            byte[] lineBytes = new byte[1024];
+
+            while (in.read(lineBytes) != -1) {
+                cpuBuffer.append(new String(lineBytes));
+            }
+
+        } catch (java.io.IOException exception) {
+
+        }
+
+        cpuLine = cpuBuffer.toString();
+
+        // 1024バイトより「cpu～cpu0」までの文字列を抽出
+        int start = cpuLine.indexOf("cpu") + 5;
+        int end = cpuLine.indexOf("cpu0");
+
+        cpuLine = cpuLine.substring(start, end);
+
+        Log.d("CPU_VALUES", cpuLine);
+
+        //1つ目の値の切り取り
+        end = cpuLine.indexOf(" ");
+        cpuLineBuffer = Integer.parseInt(cpuLine.substring(0, end));
+        debug_cpu_time = cpuLineBuffer; //For debug
+        Log.d("CPU_VALUE_1", "" + cpuLineBuffer);
+        //2つ目の値の切り取り
+        start = end + 1;
+        cpuLine = cpuLine.substring(start);
+        end = cpuLine.indexOf(" ");
+        cpuLineBuffer += Integer.parseInt(cpuLine.substring(0, end));
+        Log.d("CPU_VALUE_2", "" + (cpuLineBuffer - debug_cpu_time));
+        debug_cpu_time = cpuLineBuffer;
+        //3つ目の値の切り取り
+        start = end + 1;
+        cpuLine = cpuLine.substring(start);
+        end = cpuLine.indexOf(" ");
+        cpuLineBuffer += Integer.parseInt(cpuLine.substring(0, end));
+        Log.d("CPU_VALUE_3", "" + (cpuLineBuffer - debug_cpu_time));
+        debug_cpu_time = cpuLineBuffer;
+        //4つ目の値の切り取り
+        start = end + 1;
+        cpuLine = cpuLine.substring(start);
+        end = cpuLine.indexOf(" ");
+        cpuLineBuffer += Integer.parseInt(cpuLine.substring(0, end));
+        Log.d("CPU_VALUE_4", "" + (cpuLineBuffer - debug_cpu_time));
+        debug_cpu_time = cpuLineBuffer;
+
+        if (isFirstTick == true) {
+            totalCpuTime = cpuLineBuffer;
+            isFirstTick = false;
+        } else {
+            tickCpuTime = totalCpuTime - cpuLineBuffer;
+            totalCpuTime = cpuLineBuffer;
+        }
+
+        Log.d("CPU_TICK_VALUE", "" + tickCpuTime);
+
+        CpuUsage = tickCpuTime / 100;
+
+        Log.d("CPU_USAGE_VALUE", "" + CpuUsage);
     }
 }

@@ -12,7 +12,6 @@ import android.util.Log;
 import java.util.Timer;
 import java.util.TimerTask;
 
-
 public class SystemMonitorIntentService extends IntentService {
 
     boolean isServiceStarted = false;
@@ -26,7 +25,7 @@ public class SystemMonitorIntentService extends IntentService {
         super.onCreate();
         Log.i("SystemMonitorIService", "onCreate");
         if (isServiceStarted == false) {
-            startService(new Intent(this, SystemMonitorIntentService.class));
+            startService(new Intent(this, SystemMonitorService.class));
             isServiceStarted = true;
         } else {
             Log.d("SystemMonitorIService", "already started");
@@ -50,7 +49,7 @@ public class SystemMonitorIntentService extends IntentService {
     public void onDestroy() {
         super.onDestroy();
         Log.i("SystemMonitorIService", "onDestroy");
-        stopService(new Intent(this, SystemMonitorIntentService.class));
+        stopService(new Intent(this, SystemMonitorService.class));
         isServiceStarted = false;
     }
 
