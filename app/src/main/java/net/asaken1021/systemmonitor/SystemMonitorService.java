@@ -102,7 +102,7 @@ public class SystemMonitorService extends Service {
                         am.getMemoryInfo(mi);
                         availMem = mi.availMem / 1024000;
                         checkCpuUsage();
-                        Log.d("MEM_VALUE", "" + availMem);
+                        Log.d("RAM_VALUE", "" + availMem);
                         builder.setContentText("CPU: " + CpuUsage + "%" + " RAM: " + availMem + "MB");
                         notify = builder.build();
                         notify.flags = Notification.FLAG_NO_CLEAR;
@@ -127,6 +127,8 @@ public class SystemMonitorService extends Service {
             while (in.read(lineBytes) != -1) {
                 cpuBuffer.append(new String(lineBytes));
             }
+
+            in.close();
 
         } catch (java.io.IOException exception) {
 
@@ -166,13 +168,13 @@ public class SystemMonitorService extends Service {
             totalCpuTime = cpuLineBuffer;
             isFirstTick = false;
         } else {
-            tickCpuTime = totalCpuTime - cpuLineBuffer;
+            //これは正しい?
+            tickCpuTime = totalCpuTime / cpuLineBuffer;
+            CpuUsage = tickCpuTime / 1;
             totalCpuTime = cpuLineBuffer;
         }
 
         Log.d("CPU_TICK_VALUE", "" + tickCpuTime);
-
-        CpuUsage = tickCpuTime / 100;
 
         Log.d("CPU_USAGE_VALUE", "" + CpuUsage);
     }
