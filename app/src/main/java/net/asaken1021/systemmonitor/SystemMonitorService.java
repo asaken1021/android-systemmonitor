@@ -58,7 +58,7 @@ public class SystemMonitorService extends Service {
         builder.setSmallIcon(R.drawable.cpu_icon);
         builder.setContentTitle("SystemMonitor");
         builder.setContentText("NotificationTest");
-        builder.setSubText("SubText");
+//        builder.setSubText("SubText");
         builder.setAutoCancel(false);
         if (isServiceStarted == false) {
             start();
@@ -160,13 +160,6 @@ public class SystemMonitorService extends Service {
         end = cpuLine.indexOf(" ");
         cpuLineBuffer += Integer.parseInt(cpuLine.substring(0, end));
         Log.d("CPU_VALUE_3", "" + (cpuLineBuffer - debug_cpu_time));
-        debug_cpu_time = cpuLineBuffer;
-        //4つ目の値の切り取り
-        start = end + 1;
-        cpuLine = cpuLine.substring(start);
-        end = cpuLine.indexOf(" ");
-        cpuLineBuffer += Integer.parseInt(cpuLine.substring(0, end));
-        Log.d("CPU_VALUE_4", "" + (cpuLineBuffer - debug_cpu_time));
         debug_cpu_time = cpuLineBuffer;
 
         if (isFirstTick == true) {
