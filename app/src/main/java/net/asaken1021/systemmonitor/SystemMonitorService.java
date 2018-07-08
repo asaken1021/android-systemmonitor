@@ -25,6 +25,8 @@ public class SystemMonitorService extends Service {
     ActivityManager am;
     ActivityManager.MemoryInfo mi;
     long availMem = 0;
+    long totalMem = 0;
+    long usedMem = 0;
     Notification notify;
     NotificationCompat.Builder builder;
     NotificationManagerCompat manager;
@@ -60,6 +62,7 @@ public class SystemMonitorService extends Service {
         builder.setContentText("NotificationTest");
 //        builder.setSubText("SubText");
         builder.setAutoCancel(false);
+
         if (isServiceStarted == false) {
             start();
             isServiceStarted = true;
@@ -101,9 +104,13 @@ public class SystemMonitorService extends Service {
 //                        builder.setSubText("Count: " + count);
                         am.getMemoryInfo(mi);
                         availMem = mi.availMem / 1024000;
+                        totalMem = mi.totalMem / 1024000;
+                        usedMem = totalMem - availMem;
                         checkCpuUsage();
                         Log.d("RAM_VALUE", "" + availMem);
-                        builder.setContentText("CPU: " + CpuUsage + "%" + " RAM: " + availMem + "MB");
+                        builder.setContentTitle("CPU: " + CpuUsage + "%" + " 空きRAM: " + availMem + "MB");
+                        builder.setContentText("使用中/全体RAM: " + usedMem + "/" + totalMem + "MB");
+                        builder.setShowWhen(false);
                         notify = builder.build();
                         notify.flags = Notification.FLAG_NO_CLEAR;
                         manager.notify(1, notify);
@@ -115,7 +122,7 @@ public class SystemMonitorService extends Service {
 
     private void checkCpuUsage() {
         try {
-            Process process = cmd.start();
+            Process process = cmd.start(); //cat /proc/stat
 
             InputStream in = process.getInputStream();
 
@@ -135,6 +142,8 @@ public class SystemMonitorService extends Service {
         }
 
         cpuLine = cpuBuffer.toString();
+
+        Log.d("cpuLine", cpuLine);
 
         // 1024バイトより「cpu～cpu0」までの文字列を抽出
         int start = cpuLine.indexOf("cpu") + 5;
