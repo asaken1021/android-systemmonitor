@@ -50,7 +50,7 @@ public class SystemMonitorService extends Service {
     int cpuTotalTime = 0;       //過去のCPU使用時間の総和
     boolean isFirstTick = true;
     boolean isSecondTick = true;
-    int CpuUsage = 0;          //CPU使用率
+    int CpuUsage = 0;           //CPU使用率
     int debug_cpu_time = 0;     //デバッグ用
     String CpuUsage_String = "";
 
